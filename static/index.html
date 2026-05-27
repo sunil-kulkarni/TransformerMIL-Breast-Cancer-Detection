@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCD Classifier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f1a; color: #f8fafc; overflow-x: hidden; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+        .neon-text { text-shadow: 0 0 10px rgba(99, 102, 241, 0.6); }
+        .console-text { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+        .progress-fill { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); background: linear-gradient(90deg, #6366f1, #22d3ee); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .status-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    </style>
+</head>
+<body class="p-6">
+    <header class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tighter bg-gradient-to-r from-indigo-400 to-cyan-300 bg-clip-text text-transparent italic">TransformerMIL Breast Cancer Detection</h1>
+            <div class="flex items-center gap-2 text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 status-dot"></span> Classification Engine
+            </div>
+        </div>
+        <div class="glass px-5 py-2 rounded-xl border-indigo-500/20 flex items-center gap-3">
+            <div class="text-right">
+                <p class="text-[9px] text-slate-500 font-bold uppercase">Prediction classes</p>
+                <p class="text-xs font-bold text-indigo-300">Normal|Benign|Malignant</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="grid grid-cols-12 gap-6 max-w-7xl mx-auto">
+        <section class="col-span-12 lg:col-span-4 space-y-4">
+            <div class="glass rounded-2xl p-5 border-indigo-500/10">
+                <h3 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">Source Input</h3>
+                
+                <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="updateFileName()">
+                
+                <label id="uploadBox" for="fileInput" class="block w-full py-8 border-2 border-dashed border-slate-800 rounded-xl text-center cursor-pointer hover:bg-white/5 transition-all">
+                    <p id="fileNameDisplay" class="text-slate-500 text-sm">Select H&E Stained Image</p>
+                </label>
+
+                <div id="previewContainer" class="hidden relative w-full aspect-square rounded-xl overflow-hidden border border-slate-800">
+                    <img id="imagePreview" class="w-full h-full object-cover" src="" alt="Sample Preview">
+                    <div class="absolute bottom-0 left-0 w-full bg-slate-900/80 backdrop-blur text-center py-2">
+                        <p id="previewName" class="text-indigo-400 font-bold text-[10px] truncate px-4">--</p>
+                    </div>
+                </div>
+
+                <button onclick="startAnalysis()" id="runBtn" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
+                    ANALYZE SAMPLE
+                </button>
+                
+                <button onclick="resetSystem()" id="resetBtn" class="hidden w-full mt-4 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold text-slate-300 transition-all border border-slate-700 active:scale-95">
+                    UPLOAD NEW SAMPLE
+                </button>
+            </div>
+
+            <div class="glass rounded-2xl overflow-hidden border-slate-800 transition-all duration-300" id="consoleContainer">
+                <div class="bg-slate-900/50 px-4 py-2 border-b border-white/5 flex justify-between items-center cursor-pointer" onclick="toggleConsole()">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">System Terminal</span>
+                    <span id="consoleToggle" class="text-slate-500 text-xs">▼</span>
+                </div>
+                <div id="console" class="h-48 p-4 overflow-y-auto console-text text-indigo-300/80 space-y-1">
+                    <div class="text-slate-600">> Kernel initialized. Awaiting diagnostic trigger...</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="col-span-12 lg:col-span-8 space-y-6">
+            
+            <div id="progressContainer" class="invisible space-y-2">
+                <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <span id="progressText">Processing...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="w-full h-1 bg-slate-900 rounded-full overflow-hidden">
+                    <div id="progressBar" class="progress-fill h-full w-0"></div>
+                </div>
+            </div>
+
+            <div id="resultsBar" class="hidden grid grid-cols-12 gap-4">
+                <div class="col-span-12 md:col-span-5 glass rounded-2xl p-5 border-l-4 border-indigo-500">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">Active File</p>
+                    <h3 id="resFileName" class="text-sm font-bold text-slate-200 truncate">--</h3>
+                </div>
+                <div class="col-span-6 md:col-span-4 glass rounded-2xl p-5">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">Primary Diagnosis</p>
+                    <h3 id="resClass" class="text-xl font-bold text-indigo-400 neon-text">--</h3>
+                </div>
+                <div class="col-span-6 md:col-span-3 glass rounded-2xl p-5">
+                    <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">Confidence</p>
+                    <h3 id="resConf" class="text-xl font-bold text-cyan-400">--</h3>
+                </div>
+            </div>
+
+            <div id="dataGrid" class="hidden glass rounded-2xl p-6 space-y-6">
+                <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Confidence Spectrum</h4>
+                <div id="scoreList" class="space-y-4"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let isConsoleOpen = true;
+
+        function toggleConsole() {
+            const con = document.getElementById('console');
+            const arrow = document.getElementById('consoleToggle');
+            isConsoleOpen = !isConsoleOpen;
+            con.classList.toggle('hidden');
+            arrow.innerText = isConsoleOpen ? '▼' : '▲';
+        }
+
+        function log(msg, type = 'info') {
+            const con = document.getElementById('console');
+            const color = type === 'error' ? 'text-red-400' : 'text-indigo-300/80';
+            con.innerHTML += `<div class="${color}">> ${msg}</div>`;
+            con.scrollTop = con.scrollHeight;
+        }
+
+        function updateFileName() {
+            const input = document.getElementById('fileInput');
+            const file = input.files[0];
+            
+            if(file) {
+                document.getElementById('previewName').innerText = file.name;
+                log(`File staged: ${file.name}`);
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('uploadBox').classList.add('hidden');
+                    document.getElementById('previewContainer').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function resetSystem() {
+            document.getElementById('fileInput').value = "";
+            document.getElementById('imagePreview').src = "";
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('uploadBox').classList.remove('hidden');
+
+            document.getElementById('progressContainer').classList.add('invisible');
+            document.getElementById('resultsBar').classList.add('hidden');
+            document.getElementById('dataGrid').classList.add('hidden');
+
+            document.getElementById('runBtn').classList.remove('hidden');
+            document.getElementById('runBtn').disabled = false;
+            document.getElementById('resetBtn').classList.add('hidden');
+
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressPercent').innerText = '0%';
+            document.getElementById('progressText').innerText = 'Ready';
+
+            log("System reset. Awaiting new sample.");
+        }
+
+        async function startAnalysis() {
+            const file = document.getElementById('fileInput').files[0];
+            if(!file) return alert("System requires input image.");
+
+            const btn = document.getElementById('runBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const bar = document.getElementById('progressBar');
+            const barText = document.getElementById('progressText');
+            const barPercent = document.getElementById('progressPercent');
+            
+            btn.disabled = true;
+            progressContainer.classList.remove('invisible');
+            
+            const steps = [
+                {p: 20, t: "Initializing inference pipelines..."},
+                {p: 45, t: "Extracting CTransPath & Phikon Patches..."},
+                {p: 75, t: "Processing Model Batches..."},
+                {p: 90, t: "Executing 5-Fold MIL Ensemble..."}
+            ];
+
+            let stepIdx = 0;
+            const stepInterval = setInterval(() => {
+                if(stepIdx < steps.length) {
+                    bar.style.width = `${steps[stepIdx].p}%`;
+                    barText.innerText = steps[stepIdx].t;
+                    barPercent.innerText = `${steps[stepIdx].p}%`;
+                    log(steps[stepIdx].t);
+                    stepIdx++;
+                }
+            }, 600);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                clearInterval(stepInterval);
+                bar.style.width = '100%';
+                barPercent.innerText = '100%';
+                barText.innerText = "Diagnosis Complete";
+                log("Processing success. Classification results retrieved.");
+
+                document.getElementById('resultsBar').classList.remove('hidden');
+                document.getElementById('resFileName').innerText = data.filename;
+                document.getElementById('resClass').innerText = data.prediction.toUpperCase();
+                document.getElementById('resConf').innerText = data.all_scores[data.prediction] + '%';
+
+                const scoreList = document.getElementById('scoreList');
+                scoreList.innerHTML = '';
+                Object.entries(data.all_scores).forEach(([cls, score]) => {
+                    const isWinner = cls === data.prediction;
+                    scoreList.innerHTML += `
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-[10px] font-extrabold ${isWinner ? 'text-indigo-400' : 'text-slate-500'} uppercase">
+                                <span>${cls}</span><span>${score}%</span>
+                            </div>
+                            <div class="w-full h-1 bg-slate-900/50 rounded-full">
+                                <div class="h-full rounded-full transition-all duration-1000 ${isWinner ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-slate-700'}" 
+                                     style="width: ${score}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('dataGrid').classList.remove('hidden');
+                
+                btn.classList.add('hidden');
+                document.getElementById('resetBtn').classList.remove('hidden');
+
+            } catch (err) {
+                clearInterval(stepInterval);
+                log("CRITICAL ERROR: Kernel Communication Interrupted.", "error");
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
