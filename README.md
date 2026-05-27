@@ -4,8 +4,7 @@ Simple FastAPI app that runs a preloaded Swin + Phikon feature extractor with a 
 
 **Files:**
 - [app.py](app.py#L1-L200): FastAPI server and model inference pipeline.
-- [capstone_ensemble](capstone_ensemble): folder containing `brain_0.pth`..`brain_4.pth` ensemble weights.
-- [models](models): additional model weights used by the project.
+- [Ensemble](Ensemble): folder containing `brain_0.pth`..`brain_4.pth` ensemble weights.
 
 **Requirements:**
 Install the Python dependencies from `requirements.txt`:
@@ -40,8 +39,6 @@ Example curl usage:
 curl -F "file=@/path/to/image.png" http://127.0.0.1:8000/analyze
 ```
 
-**Notes & troubleshooting:**
-- If you want to run without GPU, the app will fall back to CPU but will be much slower.
-- Ensure the model weight files are present and readable by the process.
-
-If you want, I can pin versions in `requirements.txt` or create a `venv` setup script.
+**Analyze Images**  
+Access the drive link to analyze histopathology slides: 
+https://drive.google.com/drive/folders/1H1mfY853Sd2rcYEIUByRnWP-wgjfWMgs?usp=sharing
