@@ -56,3 +56,26 @@ https://drive.google.com/drive/folders/1H1mfY853Sd2rcYEIUByRnWP-wgjfWMgs?usp=sha
 
 ### Results**
 ![Dashboard](Images/dashboard2.jpeg)
+
+## Docker
+
+Build the image (CPU):
+
+```bash
+docker build -t transformer-mil:latest .
+```
+
+Run the container (CPU):
+
+```bash
+docker run -p 8000:8000 transformer-mil:latest
+```
+
+Run with GPU (requires NVIDIA Container Toolkit and a CUDA-enabled base image / PyTorch build):
+
+```bash
+# Example (host must have NVIDIA drivers + toolkit):
+docker run --gpus all -p 8000:8000 transformer-mil:latest
+```
+
+Note: The provided `Dockerfile` uses a slim Python base and installs CPU PyTorch via `pip`. For a GPU-enabled image, switch to an official CUDA-enabled base image or use the official PyTorch Docker images and install the matching `torch` wheel for your CUDA version.
