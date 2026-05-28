@@ -51,10 +51,10 @@ Access the drive link to analyze histopathology slides:
 https://drive.google.com/drive/folders/1H1mfY853Sd2rcYEIUByRnWP-wgjfWMgs?usp=sharing
 
 ## Images of the project
-### Dashboard** 
+### Dashboard page
 ![Dashboard](Images/dashboard1.jpeg)
 
-### Results**
+### Results after performing analysis
 ![Dashboard](Images/dashboard2.jpeg)
 
 ## Docker
